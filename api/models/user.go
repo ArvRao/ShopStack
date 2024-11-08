@@ -3,42 +3,43 @@ package models
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type UserRole string
+
+const (
+	RoleCustomer UserRole = "customer"
+	RoleVendor   UserRole = "vendor"
+	RoleAdmin    UserRole = "admin"
+)
+
 type UserStatus string
 
 const (
-	RoleAdmin    UserRole = "admin"
-	RoleVendor   UserRole = "vendor"
-	RoleCustomer UserRole = "customer"
-
 	StatusActive  UserStatus = "active"
 	StatusBlocked UserStatus = "blocked"
 )
 
+// User represents a user in the e-commerce system
 type User struct {
-	ID           uuid.UUID  `json:"id"`
-	Email        string     `json:"email"`
-	PasswordHash string     `json:"-"`
-	Role         UserRole   `json:"role"`
-	Status       UserStatus `json:"status"`
-	FullName     string     `json:"full_name"`
-	Phone        string     `json:"phone,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-}
+	ID           uint       `gorm:"primaryKey"`
+	Name         string     `gorm:"type:varchar(100);not null"`
+	Email        string     `gorm:"uniqueIndex;type:varchar(100);not null"`
+	PasswordHash string     `gorm:"type:varchar(255);not null"` // Hashed password
+	Phone        string     `gorm:"type:varchar(20)"`
+	Role         UserRole   `gorm:"type:varchar(20);not null;default:'customer'"`
+	Status       UserStatus `gorm:"type:varchar(20);not null;default:'active'"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    gorm.DeletedAt `gorm:"index"` // For soft deletes
 
-type CreateUserInput struct {
-	Email    string   `json:"email" validate:"required,email"`
-	Password string   `json:"password" validate:"required,min=6"`
-	Role     UserRole `json:"role" validate:"required,oneof=admin vendor customer"`
-	FullName string   `json:"full_name" validate:"required"`
-	Phone    string   `json:"phone" validate:"omitempty"`
-}
+	// Relationships
+	Addresses []Address `gorm:"foreignKey:UserID"` // User addresses
+	Orders    []Order   `gorm:"foreignKey:UserID"` // Order history
+	Reviews   []Review  `gorm:"foreignKey:UserID"` // Product reviews
 
-type LoginInput struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	// Additional fields for vendors
+	StoreName        *string `gorm:"type:varchar(100)"` // Vendor's store name (nullable for non-vendors)
+	StoreDescription *string `gorm:"type:text"`         // Description for vendor's store
 }
