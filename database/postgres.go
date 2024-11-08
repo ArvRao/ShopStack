@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/ArvRao/shopstack/api/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -52,10 +51,10 @@ func SyncDatabase() {
 	}
 	defer CloseDb(db)
 
-	models := []interface{}{
-		// &models.Admin{},
-		// &models.Product{},
-		// &models.ProductImage{},
+	/* models := []interface{}{
+		&models.Admin{},
+		&models.Product{},
+		&models.ProductImage{},
 		&models.User{},
 		&models.Address{},
 		// &models.Cart{},
@@ -64,10 +63,10 @@ func SyncDatabase() {
 		// &models.CartTotal{},
 	}
 	log.Println("Models:", models)
-	// for _, model := range models {
-	// 	err := db.AutoMigrate(model)
-	// 	errHandler(err)
-	// }
+	for _, model := range models {
+		err := db.AutoMigrate(model)
+		errHandler(err)
+	} */
 
 	log.Println("Database migrated successfully")
 }
