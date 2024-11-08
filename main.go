@@ -4,33 +4,37 @@ import (
 	"log"
 	"os"
 
+	"github.com/ArvRao/shopstack/api/routes"
 	"github.com/ArvRao/shopstack/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	err := godotenv.Load(".env") // Adjust the path based on your directory structure
+	// Load environment variables
+	err := godotenv.Load(".env")
 	if err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
-	myVar := os.Getenv("DB_HOST")
-	log.Println("DB_HOST:", myVar)
+	// Initialize the database connection
+	if err := database.InitDB(); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 
-	// Run migrations
+	// Run database migrations
 	database.SyncDatabase()
 
+	// Initialize the Fiber app
 	app := fiber.New()
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello, ShopStack!")
-	})
+	// Register routes
+	routes.RegisterUserRoutes(app)
 
+	// Start the server
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3000"
 	}
-
 	log.Fatal(app.Listen(":" + port))
 }
