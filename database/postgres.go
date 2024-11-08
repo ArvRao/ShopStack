@@ -1,53 +1,80 @@
 package database
 
 import (
-	"context"
 	"fmt"
+	"log"
 	"os"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/ArvRao/shopstack/api/models"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-var DB *pgxpool.Pool
+// Global DB instance
+var DB *gorm.DB
 
-func InitDB() error {
-	// Read database configuration from environment variables
+// OpenDb initializes the database connection
+func OpenDb() (*gorm.DB, error) {
 	dbHost := os.Getenv("DB_HOST")
 	dbPort := os.Getenv("DB_PORT")
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
 
-	// Construct the database connection string
-	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", dbUser, dbPassword, dbHost, dbPort, dbName)
+	// Create DSN (Data Source Name) for PostgreSQL
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		dbHost, dbPort, dbUser, dbPassword, dbName)
 
-	// Create a connection pool
-	config, err := pgxpool.ParseConfig(dbURL)
+	// Open a new GORM database connection
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		return fmt.Errorf("error parsing database config: %v", err)
+		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}
 
-	// Set max connections in the pool
-	config.MaxConns = 10
-
-	// Create the connection pool
-	pool, err := pgxpool.ConnectConfig(context.Background(), config)
-	if err != nil {
-		return fmt.Errorf("error connecting to the database: %v", err)
-	}
-
-	// Verify the connection
-	if err := pool.Ping(context.Background()); err != nil {
-		return fmt.Errorf("error pinging database: %v", err)
-	}
-
-	DB = pool
-	fmt.Println("Successfully connected to the database")
-	return nil
+	return db, nil
 }
 
-func CloseDB() {
-	if DB != nil {
-		DB.Close()
+// CloseDb closes the database connection
+func CloseDb(db *gorm.DB) {
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Printf("Error getting database: %v", err)
+		return
+	}
+	sqlDB.Close()
+}
+
+// SyncDatabase performs auto-migration for all models
+func SyncDatabase() {
+	db, err := OpenDb()
+	if err != nil {
+		log.Fatalf("Error opening database: %v", err)
+	}
+	defer CloseDb(db)
+
+	models := []interface{}{
+		// &models.Admin{},
+		// &models.Product{},
+		// &models.ProductImage{},
+		&models.User{},
+		&models.Address{},
+		// &models.Cart{},
+		&models.Order{},
+		&models.Review{},
+		// &models.CartTotal{},
+	}
+	log.Println("Models:", models)
+	// for _, model := range models {
+	// 	err := db.AutoMigrate(model)
+	// 	errHandler(err)
+	// }
+
+	log.Println("Database migrated successfully")
+}
+
+// Error handler for migration
+func errHandler(e error) {
+	if e != nil {
+		log.Println(e)
 	}
 }
