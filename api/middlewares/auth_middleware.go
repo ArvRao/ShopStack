@@ -19,15 +19,18 @@ func JWTMiddleware(c *fiber.Ctx) error {
 	}
 
 	// Split the Authorization header to get the token part
-	tokenString := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer"))
+	tokenString := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 	if tokenString == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Missing or malformed JWT",
 		})
 	}
 
-	// Parse and validate the token
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	// Define a custom claims structure that matches the expected claims in the JWT
+	claims := jwt.MapClaims{}
+
+	// Parse the token with claims
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		// Ensure that the token method conforms to HMAC (HS256)
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fiber.ErrUnauthorized
@@ -44,18 +47,32 @@ func JWTMiddleware(c *fiber.Ctx) error {
 		})
 	}
 
-	// Get the claims from the token (assuming claims are of type jwt.MapClaims)
-	claims, ok := token.Claims.(jwt.MapClaims)
+	// Get the claims from the token and attach to context
+	userID, ok := claims["user_id"].(float64)
 	if !ok {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Failed to parse JWT claims",
+			"error": "Invalid JWT claims",
+		})
+	}
+
+	email, ok := claims["email"].(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid JWT claims",
+		})
+	}
+
+	role, ok := claims["role"].(string)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid JWT claims",
 		})
 	}
 
 	// Attach user information from claims to the context
-	c.Locals("user_id", claims["user_id"])
-	c.Locals("email", claims["email"])
-	c.Locals("role", claims["role"])
+	c.Locals("user_id", int(userID))
+	c.Locals("email", email)
+	c.Locals("role", role)
 
 	// Proceed to the next handler
 	return c.Next()
