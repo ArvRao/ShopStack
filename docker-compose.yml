@@ -1,0 +1,20 @@
+version: "3.8"
+
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    environment:
+      - SERVICES=s3,dynamodb,lambda,cloudwatch # add other services as needed
+      - AWS_DEFAULT_REGION=ap-south-1
+      - DEBUG=1 # enable debug logs if needed
+    ports:
+      - "4566:4566" # LocalStack Edge Port for AWS Services
+      - "4571:4571" # Lambda API endpoint (optional)
+    volumes:
+      - "./localstack/data:/var/lib/localstack" # changed from /tmp/localstack
+      - "/var/run/docker.sock:/var/run/docker.sock" # required for Lambda service
+
+networks:
+  default:
+    name: localstack_network

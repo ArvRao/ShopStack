@@ -3,11 +3,14 @@ package controllers
 import (
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/ArvRao/shopstack/api/models"
 	"github.com/ArvRao/shopstack/database"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v4"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -17,6 +20,12 @@ type UserRegistrationRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
 	Phone    string `json:"phone,omitempty"`
+}
+
+// UserLoginRequest defines the JSON structure for login request
+type UserLoginRequest struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 // RegisterUser handles user registration
@@ -84,4 +93,74 @@ func isUniqueConstraintError(err error) bool {
 		return true
 	}
 	return false
+}
+
+// LoginUser handles user authentication
+func LoginUser(c *fiber.Ctx) error {
+	var req UserLoginRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid request format",
+		})
+	}
+
+	// Find the user by email
+	var user models.User
+	db := database.DB
+	if err := db.Where("email = ?", req.Email).First(&user).Error; err != nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid email or password",
+		})
+	}
+
+	// Check if the password is correct
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid email or password",
+		})
+	}
+
+	// Generate JWT token
+	token, err := generateJWT(user)
+	if err != nil {
+		log.Printf("Failed to generate JWT: %v", err)
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to generate token",
+		})
+	}
+
+	// Return the JWT token
+	return c.JSON(fiber.Map{
+		"message": "Login successful",
+		"token":   token,
+	})
+}
+
+// generateJWT generates a JWT token for the given user
+func generateJWT(user models.User) (string, error) {
+	secret := os.Getenv("JWT_SECRET")
+
+	claims := jwt.MapClaims{
+		"user_id": user.ID,
+		"email":   user.Email,
+		"role":    user.Role,
+		"exp":     time.Now().Add(time.Hour * 72).Unix(), // Token expires in 72 hours
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
+}
+
+// GetUserProfile retrieves the user profile for the logged-in user
+func GetUserProfile(c *fiber.Ctx) error {
+	userID := c.Locals("user_id")
+	email := c.Locals("email")
+	role := c.Locals("role")
+
+	// Send user data back as a response
+	return c.JSON(fiber.Map{
+		"user_id": userID,
+		"email":   email,
+		"role":    role,
+	})
 }
