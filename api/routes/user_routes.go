@@ -14,4 +14,6 @@ func RegisterUserRoutes(app *fiber.App) {
 
 	// Protected routes (example: profile route)
 	app.Get("/api/user/profile", middlewares.JWTMiddleware, controllers.GetUserProfile)
+	app.Put("/api/user/profile", middlewares.JWTMiddleware, controllers.UpdateUserProfileHandler)
+	app.Put("/api/user/change-password", middlewares.JWTMiddleware, controllers.ChangePasswordHandler)
 }

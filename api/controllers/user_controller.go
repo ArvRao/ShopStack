@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ArvRao/shopstack/api/dto"
 	"github.com/ArvRao/shopstack/api/models"
+	"github.com/ArvRao/shopstack/api/services"
 	"github.com/ArvRao/shopstack/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
@@ -163,4 +165,52 @@ func GetUserProfile(c *fiber.Ctx) error {
 		"email":   email,
 		"role":    role,
 	})
+}
+
+// GetUserProfileHandler handles GET /api/user/profile
+func GetUserProfileHandler(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int)
+	profile, err := services.GetUserProfile(uint(userID))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
+	}
+	return c.JSON(profile)
+}
+
+// UpdateUserProfileHandler handles PUT /api/user/profile
+func UpdateUserProfileHandler(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int)
+
+	var updateData dto.UpdateUserProfileRequest
+	if err := c.BodyParser(&updateData); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	err := services.UpdateUserProfile(uint(userID), &updateData)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Profile updated successfully"})
+}
+
+// ChangePasswordHandler handles PUT /api/user/change-password
+func ChangePasswordHandler(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(int)
+
+	var req dto.ChangePasswordRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
+	}
+
+	if req.NewPassword == "" || req.CurrentPassword == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Both current and new passwords are required"})
+	}
+
+	err := services.ChangePassword(uint(userID), req.CurrentPassword, req.NewPassword)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	return c.JSON(fiber.Map{"message": "Password changed successfully"})
 }
