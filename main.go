@@ -28,6 +28,13 @@ func main() {
 	// Initialize the Fiber app
 	app := fiber.New()
 
+	// Define root route
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"message": "Welcome to the ShopStack!",
+		})
+	})
+
 	// Register routes
 	routes.RegisterUserRoutes(app)
 

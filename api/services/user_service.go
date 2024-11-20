@@ -6,13 +6,23 @@ import (
 	"github.com/ArvRao/shopstack/api/dto"
 	"github.com/ArvRao/shopstack/api/models"
 	"github.com/ArvRao/shopstack/api/utils"
-	"github.com/ArvRao/shopstack/database"
+	"gorm.io/gorm"
 )
 
+// UserService struct to encapsulate user-related methods
+type UserService struct {
+	db *gorm.DB // Database connection (optional, can be passed as dependency)
+}
+
+// NewUserService creates a new instance of UserService
+func NewUserService(db *gorm.DB) *UserService {
+	return &UserService{db: db}
+}
+
 // GetUserProfile retrieves the user's profile based on their user ID
-func GetUserProfile(userID uint) (*dto.UserProfileResponse, error) {
+func (s *UserService) GetUserProfile(userID uint) (*dto.UserProfileResponse, error) {
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := s.db.First(&user, userID).Error; err != nil {
 		return nil, errors.New("user not found")
 	}
 
@@ -27,9 +37,9 @@ func GetUserProfile(userID uint) (*dto.UserProfileResponse, error) {
 }
 
 // UpdateUserProfile updates a user's profile based on provided data
-func UpdateUserProfile(userID uint, updateData *dto.UpdateUserProfileRequest) error {
+func (s *UserService) UpdateUserProfile(userID uint, updateData *dto.UpdateUserProfileRequest) error {
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := s.db.First(&user, userID).Error; err != nil {
 		return errors.New("user not found")
 	}
 
@@ -40,16 +50,16 @@ func UpdateUserProfile(userID uint, updateData *dto.UpdateUserProfileRequest) er
 		user.Phone = *updateData.Phone
 	}
 
-	if err := database.DB.Save(&user).Error; err != nil {
+	if err := s.db.Save(&user).Error; err != nil {
 		return errors.New("failed to update user profile")
 	}
 	return nil
 }
 
 // ChangePassword changes the user's password after verifying the current password
-func ChangePassword(userID uint, currentPassword, newPassword string) error {
+func (s *UserService) ChangePassword(userID uint, currentPassword, newPassword string) error {
 	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
+	if err := s.db.First(&user, userID).Error; err != nil {
 		return errors.New("user not found")
 	}
 
@@ -65,7 +75,7 @@ func ChangePassword(userID uint, currentPassword, newPassword string) error {
 	}
 	user.PasswordHash = hashedPassword
 
-	if err := database.DB.Save(&user).Error; err != nil {
+	if err := s.db.Save(&user).Error; err != nil {
 		return errors.New("failed to update password")
 	}
 	return nil

@@ -16,6 +16,20 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// UserController encapsulates dependencies for user-related handlers
+type UserController struct {
+	userService *services.UserService
+}
+
+// NewUserController creates a new instance of UserController
+func NewUserController(userService *services.UserService) *UserController {
+	return &UserController{
+		userService: userService,
+	}
+}
+
+var userService = services.NewUserService(database.DB) // Inject database dependency
+
 // UserRegistrationRequest defines the JSON structure for registration request
 type UserRegistrationRequest struct {
 	Name     string `json:"name" validate:"required"`
@@ -168,9 +182,9 @@ func GetUserProfile(c *fiber.Ctx) error {
 }
 
 // GetUserProfileHandler handles GET /api/user/profile
-func GetUserProfileHandler(c *fiber.Ctx) error {
+func (uc *UserController) GetUserProfileHandler(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(int)
-	profile, err := services.GetUserProfile(uint(userID))
+	profile, err := uc.userService.GetUserProfile(uint(userID))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -178,7 +192,7 @@ func GetUserProfileHandler(c *fiber.Ctx) error {
 }
 
 // UpdateUserProfileHandler handles PUT /api/user/profile
-func UpdateUserProfileHandler(c *fiber.Ctx) error {
+func (uc *UserController) UpdateUserProfileHandler(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(int)
 
 	var updateData dto.UpdateUserProfileRequest
@@ -186,7 +200,7 @@ func UpdateUserProfileHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid request"})
 	}
 
-	err := services.UpdateUserProfile(uint(userID), &updateData)
+	err := uc.userService.UpdateUserProfile(uint(userID), &updateData)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
@@ -195,7 +209,7 @@ func UpdateUserProfileHandler(c *fiber.Ctx) error {
 }
 
 // ChangePasswordHandler handles PUT /api/user/change-password
-func ChangePasswordHandler(c *fiber.Ctx) error {
+func (uc *UserController) ChangePasswordHandler(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(int)
 
 	var req dto.ChangePasswordRequest
@@ -207,7 +221,7 @@ func ChangePasswordHandler(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Both current and new passwords are required"})
 	}
 
-	err := services.ChangePassword(uint(userID), req.CurrentPassword, req.NewPassword)
+	err := uc.userService.ChangePassword(uint(userID), req.CurrentPassword, req.NewPassword)
 	if err != nil {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": err.Error()})
 	}
