@@ -13,8 +13,8 @@ func RegisterCategoryRoutes(app *fiber.App) {
 
 	// Admin-only routes
 	app.Post("/api/categories", middlewares.JWTMiddleware, middlewares.AdminMiddleware, categoryController.CreateCategoryHandler)
-	// app.Put("/api/categories/:id", middlewares.JWTMiddleware, middlewares.AdminMiddleware, categoryController.UpdateCategoryHandler)
-	// app.Delete("/api/categories/:id", middlewares.JWTMiddleware, middlewares.AdminMiddleware, categoryController.DeleteCategoryHandler)
+	app.Put("/api/categories/:id", middlewares.JWTMiddleware, middlewares.AdminMiddleware, categoryController.UpdateCategoryHandler)
+	app.Delete("/api/categories/:id", middlewares.JWTMiddleware, middlewares.AdminMiddleware, categoryController.DeleteCategoryHandler)
 
 	// Public routes
 	app.Get("/api/categories", categoryController.GetAllCategoriesHandler)

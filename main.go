@@ -17,6 +17,9 @@ func main() {
 		log.Fatalf("Error loading .env file: %v", err)
 	}
 
+	// Initialize Redis
+	database.InitRedis()
+
 	// Initialize the database connection
 	if err := database.InitDB(); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)

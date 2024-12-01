@@ -17,6 +17,8 @@ func RegisterUserRoutes(app *fiber.App) {
 	app.Post("/api/register", controllers.RegisterUser)
 	// Login route
 	app.Post("/api/login", controllers.LoginUser)
+	// Protected routes
+	app.Post("/api/logout", middlewares.JWT_Middleware, controllers.LogoutHandler)
 
 	// Protected routes (example: profile route)
 	app.Get("/api/user/profile", middlewares.JWTMiddleware, userController.GetUserProfileHandler)
