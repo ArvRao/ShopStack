@@ -37,6 +37,7 @@ func main() {
 
 	// Register routes
 	routes.RegisterUserRoutes(app)
+	routes.RegisterCategoryRoutes(app)
 
 	// Start the server
 	port := os.Getenv("PORT")

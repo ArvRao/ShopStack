@@ -36,6 +36,7 @@ type UserRegistrationRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=6"`
 	Phone    string `json:"phone,omitempty"`
+	Role     string `json:"role"`
 }
 
 // UserLoginRequest defines the JSON structure for login request
@@ -69,8 +70,8 @@ func RegisterUser(c *fiber.Ctx) error {
 		Email:        req.Email,
 		PasswordHash: hashedPassword,
 		Phone:        req.Phone,
-		Role:         models.RoleCustomer, // Default role for registered users
-		Status:       models.StatusActive, // Default status for new users
+		Role:         models.UserRole(req.Role), // Default role for registered users
+		Status:       models.StatusActive,       // Default status for new users
 	}
 
 	// Save user to the database
