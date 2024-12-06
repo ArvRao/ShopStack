@@ -43,7 +43,7 @@ func SyncDatabase() {
 	}
 
 	// Add your models here for migration
-	err := DB.AutoMigrate(&models.User{}, &models.Address{}, &models.Order{}, &models.Product{}, &models.ProductImage{})
+	err := DB.AutoMigrate(&models.User{}, &models.Address{}, &models.Order{}, &models.Product{}, &models.ProductImage{}, &models.Category{})
 	if err != nil {
 		log.Fatalf("Error during migration: %v", err)
 	}

@@ -6,10 +6,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// Product represents a product that is available for purchase
+// Product represents a product
 type Product struct {
 	ID          uint           `gorm:"primaryKey" json:"id"`
-	UserID      uint           `gorm:"not null" json:"user_id"`           // Foreign key to User table (vendor or admin)
+	UserID      uint           `gorm:"not null" json:"user_id"`           // Foreign key to User table
 	CategoryID  uint           `gorm:"not null" json:"category_id"`       // Foreign key to Category table
 	Name        string         `gorm:"not null" json:"name"`              // Product name
 	Description string         `json:"description"`                       // Optional description
@@ -21,5 +21,5 @@ type Product struct {
 
 	// Relationships
 	Category Category `gorm:"foreignKey:CategoryID" json:"category"` // Linked category
-	User     User     `gorm:"foreignKey:UserID" json:"user"`         // Linked vendor/admin (from User table)
+	User     User     `gorm:"foreignKey:UserID" json:"user"`         // Linked vendor/admin
 }

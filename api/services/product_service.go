@@ -12,6 +12,12 @@ type ProductService struct{}
 
 // CreateProduct creates a new product
 func (ps *ProductService) CreateProduct(userID, categoryID uint, name, description string, price float64, stock int) (*models.Product, error) {
+	// Ensure the category exists
+	var category models.Category
+	if err := database.DB.First(&category, categoryID).Error; err != nil {
+		return nil, errors.New("category does not exist")
+	}
+
 	product := &models.Product{
 		UserID:      userID,
 		CategoryID:  categoryID,
@@ -62,7 +68,8 @@ func (ps *ProductService) DeleteProduct(productID, userID uint) error {
 func (ps *ProductService) GetAllProducts(categoryID *uint) ([]models.Product, error) {
 	var products []models.Product
 
-	query := database.DB.Where("deleted_at IS NULL")
+	query := database.DB.Preload("User").Preload("Category").Where("deleted_at IS NULL")
+
 	if categoryID != nil {
 		query = query.Where("category_id = ?", *categoryID)
 	}
@@ -76,7 +83,9 @@ func (ps *ProductService) GetAllProducts(categoryID *uint) ([]models.Product, er
 // GetProduct retrieves a single product by ID
 func (ps *ProductService) GetProduct(productID uint) (*models.Product, error) {
 	var product models.Product
-	if err := database.DB.First(&product, productID).Error; err != nil {
+
+	// Use GORM Preload to eagerly load User and Category relationships
+	if err := database.DB.Preload("User").Preload("Category").First(&product, productID).Error; err != nil {
 		return nil, errors.New("product not found")
 	}
 	return &product, nil
