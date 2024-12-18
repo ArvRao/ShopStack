@@ -36,8 +36,13 @@ func (ps *ProductService) CreateProduct(userID, categoryID uint, name, descripti
 // UpdateProduct updates an existing product
 func (ps *ProductService) UpdateProduct(productID, userID uint, name, description string, price float64, stock int) error {
 	var product models.Product
-	if err := database.DB.Where("id = ? AND user_id = ?", productID, userID).First(&product).Error; err != nil {
-		return errors.New("product not found or unauthorized")
+	if err := database.DB.First(&product, productID).Error; err != nil {
+		return errors.New("product not found")
+	}
+
+	// Allow only the creator (vendor) to update the product
+	if product.UserID != userID {
+		return errors.New("unauthorized to update this product")
 	}
 
 	product.Name = name
@@ -52,12 +57,19 @@ func (ps *ProductService) UpdateProduct(productID, userID uint, name, descriptio
 }
 
 // DeleteProduct soft-deletes a product
-func (ps *ProductService) DeleteProduct(productID, userID uint) error {
+func (ps *ProductService) DeleteProduct(productID, userID uint, userRole string) error {
 	var product models.Product
-	if err := database.DB.Where("id = ? AND user_id = ?", productID, userID).First(&product).Error; err != nil {
-		return errors.New("product not found or unauthorized")
+	// Fetch the product and ensure it exists
+	if err := database.DB.First(&product, productID).Error; err != nil {
+		return errors.New("product not found")
 	}
 
+	// Ownership check: allow only the product creator (vendor) or admins to delete the product
+	if product.UserID != userID && userRole != "admin" {
+		return errors.New("unauthorized to delete this product")
+	}
+
+	// Soft-delete the product
 	if err := database.DB.Delete(&product).Error; err != nil {
 		return errors.New("failed to delete product")
 	}

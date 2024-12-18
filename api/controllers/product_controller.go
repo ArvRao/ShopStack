@@ -53,8 +53,18 @@ func (pc *ProductController) CreateProductHandler(c *fiber.Ctx) error {
 
 // UpdateProductHandler handles PUT /api/products/:id (Vendor/Admin)
 func (pc *ProductController) UpdateProductHandler(c *fiber.Ctx) error {
-	userID := c.Locals("user_id").(uint)
+	// userID := c.Locals("user_id").(uint)
+	// productID, err := strconv.Atoi(c.Params("id"))
+	userIDInterface := c.Locals("user_id")
+    var userID uint
+	// Check if userIDInterface is of type int
+    if id, ok := userIDInterface.(int); ok {
+        userID = uint(id) // Convert int to uint
+    } else {
+        return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+    }
 	productID, err := strconv.Atoi(c.Params("id"))
+
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid product ID"})
 	}
@@ -81,14 +91,23 @@ func (pc *ProductController) UpdateProductHandler(c *fiber.Ctx) error {
 
 // DeleteProductHandler handles DELETE /api/products/:id (Vendor/Admin)
 func (pc *ProductController) DeleteProductHandler(c *fiber.Ctx) error {
-	userID := c.Locals("user_id").(uint)
+	// Extract user_id and role from Locals
+	userIDInt := c.Locals("user_id").(int)
+	userID := uint(userIDInt)
+	role := c.Locals("role").(string)
+
+	// Get the product ID from the URL params
 	productID, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid product ID"})
 	}
 
-	err = pc.productService.DeleteProduct(uint(productID), userID)
+	// Call the service to delete the product
+	err = pc.productService.DeleteProduct(uint(productID), userID, role)
 	if err != nil {
+		if err.Error() == "unauthorized to delete this product" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "You are not authorized to delete this product"})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 	}
 
