@@ -13,4 +13,8 @@ func RegisterCartRoutes(app *fiber.App) {
 
 	// Protected cart routes
 	app.Post("/api/cart/add", middlewares.JWTMiddleware, cartController.AddToCartHandler)
+	app.Put("/api/cart/update/:id", middlewares.JWTMiddleware, cartController.UpdateCartItemHandler)
+	app.Delete("/api/cart/remove/:id", middlewares.JWTMiddleware, cartController.RemoveCartItemHandler)
+	app.Get("/api/cart", middlewares.JWTMiddleware, cartController.ViewCartHandler)
+	app.Delete("/api/cart/clear", middlewares.JWTMiddleware, cartController.ClearCartHandler)
 }
